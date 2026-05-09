@@ -150,43 +150,117 @@ ai-shell-v1/
 
 ## 配置
 
-首次运行会自动进入交互式配置，支持以下服务商：
+### 首次配置
 
-| 服务商 | 地址 | 推荐模型 |
-|--------|------|----------|
-| DeepSeek | https://api.deepseek.com | deepseek-v4-flash |
-| OpenAI | https://api.openai.com/v1 | gpt-4o-mini |
-| Moonshot (月之暗面) | https://api.moonshot.cn/v1 | moonshot-v1-8k |
-| Claude (Anthropic) | https://api.anthropic.com/v1 | claude-3-5-sonnet |
-| 通义千问 (阿里) | https://dashscope.aliyuncs.com/compatible-mode/v1 | qwen-turbo |
-| GLM (智谱) | https://open.bigmodel.cn/api/paas/v4 | glm-4-flash |
-| Ollama (本地) | http://localhost:11434/v1 | llama3 |
-| 自定义 | 任意 OpenAI 兼容地址 | - |
+首次运行会自动进入交互式配置，按提示操作即可：
 
-也可以手动编辑 `config.yaml`：
+```
+==================================================
+  AI Shell - 首次配置
+==================================================
+
+选择服务商：
+  1) DeepSeek
+  2) OpenAI
+  3) Moonshot (月之暗面)
+  4) Claude (Anthropic)
+  5) 通义千问 (阿里)
+  6) GLM (智谱)
+  7) Ollama (本地)
+  8) 其他（自定义地址）
+
+选择 [1]: 1
+
+已选：DeepSeek (https://api.deepseek.com)
+
+可用模型：
+  1) deepseek-v4-flash
+  2) deepseek-v4-pro
+
+选择模型: 1
+API Key: sk-xxxxxxxxxxxxxxxx
+模型名称确认 [deepseek-v4-flash]:
+Web 服务监听地址 [127.0.0.1]:
+Web 服务端口 [18080]:
+
+==================================================
+  配置已保存
+==================================================
+```
+
+### 获取 API Key
+
+| 服务商 | 申请地址 | 说明 |
+|--------|----------|------|
+| DeepSeek | https://platform.deepseek.com/api_keys | 国内首选，便宜 |
+| OpenAI | https://platform.openai.com/api-keys | 需海外手机 |
+| Moonshot | https://platform.moonshot.cn/console/api-key | 国内可用 |
+| Claude | https://console.anthropic.com/api-keys | 需海外手机 |
+| 通义千问 | https://dashscope.console.aliyun.com/apiKey | 国内可用 |
+| GLM | https://open.bigmodel.cn/usercenter/apikeys | 国内可用 |
+| Ollama | 无需 key | 本地部署，需安装 Ollama |
+
+### 修改配置
+
+配置文件 `config.yaml` 可随时手动修改，修改后重启生效：
 
 ```yaml
 server:
-  host: "127.0.0.1"
-  port: 18080
+  host: "127.0.0.1"      # 监听地址，0.0.0.0 表示允许外部访问
+  port: 18080             # 端口号
 
-chat_ai:
+chat_ai:                  # 聊天AI（理解意图、审核结果）
   base_url: "https://api.deepseek.com"
-  api_key: "your_key"
+  api_key: "sk-xxx"       # 你的 API Key
   model: "deepseek-v4-flash"
-  temperature: 0.7
-  max_tokens: 16384
+  temperature: 0.7        # 创造性：0=精确，1=随机
+  max_tokens: 16384       # 单次回复最大长度
 
-tool_ai:
+tool_ai:                  # 工具AI（执行任务、核对结果）
   base_url: "https://api.deepseek.com"
-  api_key: "your_key"
+  api_key: "sk-xxx"       # 可以和 chat_ai 用不同的 key
   model: "deepseek-v4-flash"
-  temperature: 0.1
-  max_tokens: 65536
+  temperature: 0.1        # 工具执行需要精确，设低一些
+  max_tokens: 65536       # 工具输出可能很长（如写大文件）
 
 context:
-  max_active: 20
+  max_active: 20          # 活跃上下文条数，越大越占 token
 ```
+
+### 切换服务商
+
+只需修改 `base_url` 和 `model`，API 格式兼容：
+
+```yaml
+# 切换到 OpenAI
+chat_ai:
+  base_url: "https://api.openai.com/v1"
+  api_key: "sk-xxx"
+  model: "gpt-4o-mini"
+
+# 切换到本地 Ollama
+chat_ai:
+  base_url: "http://localhost:11434/v1"
+  api_key: "ollama"       # Ollama 不需要真实 key
+  model: "llama3"
+```
+
+### 重新配置
+
+```bash
+python main.py setup      # 源码版
+ai-shell.exe setup         # 可执行文件版
+```
+
+### 配置说明
+
+| 参数 | 说明 | 建议值 |
+|------|------|--------|
+| `temperature` | 创造性，0=精确，1=随机 | chat: 0.7, tool: 0.1 |
+| `max_tokens` | 单次回复最大 token 数 | 根据模型和任务调整 |
+| `max_active` | 活跃上下文条数 | 20-50 |
+| `host` | 监听地址 | `127.0.0.1` 仅本机，`0.0.0.0` 允许外部 |
+| `port` | 端口号 | 避免 80/443/8080 等常用端口 |
 
 ## 创造空间
 
