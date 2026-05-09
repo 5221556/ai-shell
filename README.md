@@ -190,15 +190,15 @@ Web 服务端口 [18080]:
 
 ### 获取 API Key
 
-| 服务商 | 申请地址 | 说明 |
-|--------|----------|------|
-| DeepSeek | https://platform.deepseek.com/api_keys | 国内首选，便宜 |
-| OpenAI | https://platform.openai.com/api-keys | 需海外手机 |
-| Moonshot | https://platform.moonshot.cn/console/api-key | 国内可用 |
-| 通义千问 | https://dashscope.console.aliyun.com/apiKey | 国内可用 |
-| GLM | https://open.bigmodel.cn/usercenter/apikeys | 国内可用 |
-| Ollama | 无需 key | 本地部署，需安装 Ollama |
-| OpenRouter | https://openrouter.ai/keys | 聚合平台，支持 Claude/Gemini 等 |
+| 服务商 | 申请地址 |
+|--------|----------|
+| DeepSeek | https://platform.deepseek.com/api_keys | 
+| OpenAI | https://platform.openai.com/api-keys |
+| Moonshot | https://platform.moonshot.cn/console/api-key |
+| 通义千问 | https://dashscope.console.aliyun.com/apiKey |
+| GLM | https://open.bigmodel.cn/usercenter/apikeys |
+| Ollama | 无需 key |
+| OpenRouter | https://openrouter.ai/keys |
 
 ### 修改配置
 
