@@ -97,7 +97,14 @@ def _ask(prompt: str, default: str = "") -> str:
 
 
 def has_valid_config() -> bool:
-    """检查是否已有有效配置（API key 不为空）"""
+    """检查是否已有有效配置（API key 不为空或环境变量已设置）"""
+    import os
+    
+    # 检查环境变量
+    if os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("OPENAI_API_KEY"):
+        return True
+    
+    # 检查配置文件
     config_path = BASE_DIR / "config.yaml"
     if not config_path.exists():
         return False
@@ -215,13 +222,43 @@ def interactive_setup() -> bool:
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text(config_content, encoding="utf-8")
 
+    # 创建 .env 文件（方便后续使用）
+    env_path = BASE_DIR / ".env"
+    env_content = f'DEEPSEEK_API_KEY="{api_key}"\n'
+    env_path.write_text(env_content, encoding="utf-8")
+
     print()
     print("=" * 50)
-    print(f"  配置已保存到: {config_path}")
-    print(f"  服务商: {base_url}")
-    print(f"  模型: {model}")
-    print(f"  地址: http://{host}:{port}")
+    print("  配置完成！")
     print("=" * 50)
+    print()
+    print(f"  配置文件: {config_path}")
+    print(f"  环境文件: {env_path}")
+    print()
+    print("  服务商:", base_url)
+    print("  模型:", model)
+    print("  地址:", f"http://{host}:{port}")
+    print()
+    print("=" * 50)
+    print()
+    print("建议设置环境变量（永久生效）：")
+    print()
+    
+    import platform
+    system = platform.system()
+    if system == "Windows":
+        print(f'  setx DEEPSEEK_API_KEY "{api_key}"')
+    elif system == "Darwin":
+        print(f'  export DEEPSEEK_API_KEY="{api_key}"')
+        print(f'  # 添加到 ~/.zshrc 或 ~/.bashrc 永久生效')
+    else:
+        print(f'  export DEEPSEEK_API_KEY="{api_key}"')
+        print(f'  # 添加到 ~/.bashrc 或 ~/.zshrc 永久生效')
+    
+    print()
+    print("或加载 .env 文件：")
+    print(f'  source .env          # Linux/Mac')
+    print(f'  Get-Content .env     # PowerShell (查看)')
     print()
 
     return True
