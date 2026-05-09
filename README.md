@@ -210,14 +210,14 @@ server:
   port: 18080             # 端口号
 
 chat_ai:                  # 聊天AI（理解意图、审核结果）
-  base_url: "https://api.deepseek.com"
+  base_url: "https://api.deepseek.com/v1"
   api_key: "sk-xxx"       # 你的 API Key
   model: "deepseek-v4-flash"
   temperature: 0.7        # 创造性：0=精确，1=随机
   max_tokens: 16384       # 单次回复最大长度
 
 tool_ai:                  # 工具AI（执行任务、核对结果）
-  base_url: "https://api.deepseek.com"
+  base_url: "https://api.deepseek.com/v1"
   api_key: "sk-xxx"       # 可以和 chat_ai 用不同的 key
   model: "deepseek-v4-flash"
   temperature: 0.1        # 工具执行需要精确，设低一些

@@ -46,7 +46,7 @@ tools:
 PROVIDERS = {
     "1": {
         "name": "DeepSeek",
-        "url": "https://api.deepseek.com",
+        "url": "https://api.deepseek.com/v1",
         "models": ["deepseek-v4-flash", "deepseek-v4-pro"],
         "default": "deepseek-v4-flash",
     },
@@ -114,6 +114,29 @@ def run_setup_if_needed() -> bool:
         return True
     print("\n检测到首次运行，需要配置 API。\n")
     return interactive_setup()
+
+
+def create_config_from_env():
+    """从环境变量创建配置"""
+    import os
+    api_key = os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("OPENAI_API_KEY")
+    base_url = os.environ.get("AI_SHELL_BASE_URL", "https://api.deepseek.com")
+    model = os.environ.get("AI_SHELL_MODEL", "deepseek-v4-flash")
+    host = os.environ.get("AI_SHELL_HOST", "127.0.0.1")
+    port = int(os.environ.get("AI_SHELL_PORT", "18080"))
+
+    config_content = CONFIG_TEMPLATE.format(
+        host=host,
+        port=port,
+        base_url=base_url,
+        api_key=api_key,
+        model=model,
+    )
+
+    config_path = BASE_DIR / "config.yaml"
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(config_content, encoding="utf-8")
+    print(f"配置已从环境变量创建: {config_path}")
 
 
 def interactive_setup() -> bool:
