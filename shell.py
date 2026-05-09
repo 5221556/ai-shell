@@ -277,6 +277,25 @@ def _parse_decision(text: str) -> dict:
 
 def main():
     config = load_config()
+    
+    # 检查 API key
+    api_key = config.get('chat_ai', {}).get('api_key', '')
+    if not api_key:
+        print("错误：未配置 API Key")
+        print("")
+        print("请通过以下方式之一配置：")
+        print("")
+        print("方式一：设置环境变量")
+        print('  export DEEPSEEK_API_KEY="your_key"    # Linux/Mac')
+        print('  set DEEPSEEK_API_KEY=your_key         # Windows CMD')
+        print('  $env:DEEPSEEK_API_KEY="your_key"      # PowerShell')
+        print("")
+        print("方式二：运行交互式配置")
+        print("  python main.py setup")
+        print("")
+        print("获取 API Key：https://platform.deepseek.com/api_keys")
+        return
+    
     chat_prompt = load_prompt("chat.txt")
     tool_prompt = load_prompt("tool.txt")
     tool_defs = get_tool_definitions()

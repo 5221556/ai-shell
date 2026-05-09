@@ -9,7 +9,13 @@ AI Shell v2 — 统一入口
 """
 
 import sys
+import os
 import argparse
+
+
+def is_interactive():
+    """检测是否在交互式终端中运行"""
+    return sys.stdin.isatty() and sys.stdout.isatty()
 
 
 def main():
@@ -42,22 +48,68 @@ def main():
     # 强制 setup
     if args.mode == "setup":
         from setup import interactive_setup
+        if not is_interactive():
+            print("错误：setup 需要在终端中运行")
+            print("请在命令行中执行：ai-shell.exe setup")
+            sys.exit(1)
         interactive_setup()
         return
 
     # 检测是否需要首次配置
-    from setup import run_setup_if_needed
-    if not run_setup_if_needed():
-        print("配置未完成，退出。")
-        sys.exit(1)
+    from setup import has_valid_config
+    if not has_valid_config():
+        # 检查环境变量
+        api_key = os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("OPENAI_API_KEY")
+        if api_key:
+            # 从环境变量创建配置
+            from setup import create_config_from_env
+            create_config_from_env()
+        elif is_interactive():
+            # 交互式终端，运行 setup
+            print("\n检测到首次运行，需要配置 API。\n")
+            from setup import interactive_setup
+            if not interactive_setup():
+                print("配置未完成，退出。")
+                sys.exit(1)
+        else:
+            # 非交互式，提示用户
+            print("错误：未找到配置文件")
+            print("")
+            print("请先运行 setup 配置 API：")
+            print("  1. 打开命令行（cmd/PowerShell）")
+            print("  2. 执行：ai-shell.exe setup")
+            print("")
+            print("或设置环境变量：")
+            print("  set DEEPSEEK_API_KEY=your_key")
+            print("  ai-shell.exe")
+            sys.exit(1)
 
     # 启动
     if args.mode is None or args.mode == "server":
         from config import load_config
         cfg = load_config()
-        if args.host:
+        
+        # 检查 API key
+        api_key = cfg.get('chat_ai', {}).get('api_key', '')
+        if not api_key:
+            print("错误：未配置 API Key")
+            print("")
+            print("请通过以下方式之一配置：")
+            print("")
+            print("方式一：设置环境变量")
+            print('  export DEEPSEEK_API_KEY="your_key"    # Linux/Mac')
+            print('  set DEEPSEEK_API_KEY=your_key         # Windows CMD')
+            print('  $env:DEEPSEEK_API_KEY="your_key"      # PowerShell')
+            print("")
+            print("方式二：运行交互式配置")
+            print("  python main.py setup")
+            print("")
+            print("获取 API Key：https://platform.deepseek.com/api_keys")
+            sys.exit(1)
+        
+        if hasattr(args, 'host') and args.host:
             cfg["server"]["host"] = args.host
-        if args.port:
+        if hasattr(args, 'port') and args.port:
             cfg["server"]["port"] = args.port
 
         import server
