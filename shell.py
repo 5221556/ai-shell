@@ -322,6 +322,7 @@ def main():
 ║  /context      查看上下文统计        ║
 ║  /errors       查看错误日志           ║
 ║  /reload-tools 热加载创造空间工具    ║
+║  /uninstall    卸载 AI Shell         ║
 ║  /quit         退出                   ║
 ╚══════════════════════════════════════╝
 """)
@@ -378,6 +379,11 @@ def main():
             print(f"  当前: {', '.join(result['tools'])}")
             print()
             continue
+
+        if user_input == "/uninstall":
+            from uninstall import interactive_uninstall
+            interactive_uninstall()
+            break
 
         print()
 

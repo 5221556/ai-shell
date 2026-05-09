@@ -43,6 +43,9 @@ def main():
     # setup 子命令
     sub.add_parser("setup", help="重新配置 API")
 
+    # uninstall 子命令
+    sub.add_parser("uninstall", help="卸载 AI Shell")
+
     args = parser.parse_args()
 
     # 强制 setup
@@ -53,6 +56,16 @@ def main():
             print("请在命令行中执行：ai-shell.exe setup")
             sys.exit(1)
         interactive_setup()
+        return
+
+    # 卸载
+    if args.mode == "uninstall":
+        from uninstall import interactive_uninstall
+        if not is_interactive():
+            print("错误：uninstall 需要在终端中运行")
+            print("请在命令行中执行：ai-shell.exe uninstall")
+            sys.exit(1)
+        interactive_uninstall()
         return
 
     # 检测是否需要首次配置
