@@ -108,6 +108,14 @@ def has_valid_config() -> bool:
         return False
 
 
+def run_setup_if_needed() -> bool:
+    """如果需要，运行首次配置"""
+    if has_valid_config():
+        return True
+    print("\n检测到首次运行，需要配置 API。\n")
+    return interactive_setup()
+
+
 def interactive_setup() -> bool:
     """交互式首次配置，返回是否成功"""
     print()
