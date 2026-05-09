@@ -63,10 +63,10 @@ PROVIDERS = {
         "default": "moonshot-v1-8k",
     },
     "4": {
-        "name": "Claude (Anthropic)",
-        "url": "https://api.anthropic.com/v1",
-        "models": ["claude-3-5-sonnet-20241022", "claude-3-haiku-20240307"],
-        "default": "claude-3-5-sonnet-20241022",
+        "name": "OpenRouter (聚合平台，支持Claude/Gemini等)",
+        "url": "https://openrouter.ai/api/v1",
+        "models": ["anthropic/claude-3.5-sonnet", "google/gemini-pro-1.5", "meta-llama/llama-3.1-405b-instruct"],
+        "default": "anthropic/claude-3.5-sonnet",
     },
     "5": {
         "name": "通义千问 (阿里)",

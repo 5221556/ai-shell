@@ -163,7 +163,7 @@ ai-shell-v1/
   1) DeepSeek
   2) OpenAI
   3) Moonshot (月之暗面)
-  4) Claude (Anthropic)
+  4) OpenRouter (聚合平台，支持Claude/Gemini等)
   5) 通义千问 (阿里)
   6) GLM (智谱)
   7) Ollama (本地)
@@ -195,10 +195,10 @@ Web 服务端口 [18080]:
 | DeepSeek | https://platform.deepseek.com/api_keys | 国内首选，便宜 |
 | OpenAI | https://platform.openai.com/api-keys | 需海外手机 |
 | Moonshot | https://platform.moonshot.cn/console/api-key | 国内可用 |
-| Claude | https://console.anthropic.com/api-keys | 需海外手机 |
 | 通义千问 | https://dashscope.console.aliyun.com/apiKey | 国内可用 |
 | GLM | https://open.bigmodel.cn/usercenter/apikeys | 国内可用 |
 | Ollama | 无需 key | 本地部署，需安装 Ollama |
+| OpenRouter | https://openrouter.ai/keys | 聚合平台，支持 Claude/Gemini 等 |
 
 ### 修改配置
 
