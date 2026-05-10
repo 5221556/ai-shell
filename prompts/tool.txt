@@ -22,6 +22,7 @@
 - 参数: command (要执行的命令)
 - 返回: 命令输出
 - 用途: 执行系统命令
+- 重要：当前是 Windows 系统，必须用 Windows 命令（dir/copy/del/mkdir）
 
 工作流程：
 1. 分析任务需要什么工具
