@@ -105,9 +105,28 @@ def main():
             # 交互式终端，运行 setup
             print("\n检测到首次运行，需要配置 API。\n")
             from setup import interactive_setup
-            if not interactive_setup():
+            result = interactive_setup()
+            if not result:
                 print("配置未完成，退出。")
                 sys.exit(1)
+            
+            # 根据用户选择启动
+            if result == "web":
+                # 启动 Web 服务
+                from config import load_config
+                cfg = load_config()
+                import server
+                server.config = cfg
+                server.main()
+                return
+            elif result == "shell":
+                # 启动终端版
+                import shell
+                shell.main()
+                return
+            else:
+                # 不启动
+                return
         else:
             # 非交互式（双击 exe），显示错误
             show_error(

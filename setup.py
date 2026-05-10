@@ -260,5 +260,30 @@ def interactive_setup() -> bool:
     print(f'  source .env          # Linux/Mac')
     print(f'  Get-Content .env     # PowerShell (查看)')
     print()
-
-    return True
+    
+    # 选择启动方式
+    print("=" * 50)
+    print("  选择启动方式")
+    print("=" * 50)
+    print()
+    print("  1) Web 服务（浏览器访问）")
+    print("  2) 终端版（命令行交互）")
+    print("  3) 不启动，稍后手动运行")
+    print()
+    
+    start_choice = _ask("选择", "1")
+    
+    if start_choice == "1":
+        print("\n正在启动 Web 服务...")
+        print(f"浏览器将自动打开 http://{host}:{port}")
+        print("按 Ctrl+C 停止服务\n")
+        return "web"
+    elif start_choice == "2":
+        print("\n正在启动终端版...\n")
+        return "shell"
+    else:
+        print("\n配置完成！稍后可手动启动：")
+        print("  python main.py        # Web 服务")
+        print("  python main.py shell  # 终端版")
+        print()
+        return "none"
