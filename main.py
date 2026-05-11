@@ -19,7 +19,8 @@ import webbrowser
 
 
 def is_interactive():
-    """检测是否在交互式终端中运行"""
+    if getattr(sys, 'frozen', False):
+        return True
     return sys.stdin.isatty() and sys.stdout.isatty()
 
 
