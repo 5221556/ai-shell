@@ -27,4 +27,13 @@ def _load_from(path) -> dict:
         return os.environ.get(var, "")
 
     raw = re.sub(r'\$\{(\w+)\}', replace_env, raw)
-    return yaml.safe_load(raw)
+    cfg = yaml.safe_load(raw)
+    _fix_base_url(cfg)
+    return cfg
+
+
+def _fix_base_url(cfg: dict):
+    for section in ("chat_ai", "tool_ai"):
+        url = cfg.get(section, {}).get("base_url", "")
+        if "api.deepseek.com" in url and not url.endswith("/v1"):
+            cfg[section]["base_url"] = url.rstrip("/") + "/v1"
