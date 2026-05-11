@@ -26,6 +26,7 @@ HIDDEN_IMPORTS = [
     "self_update",
     "paths",
     "setup",
+    "uninstall",
     "server",
     "shell",
     "yaml",
