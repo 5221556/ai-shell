@@ -127,7 +127,7 @@ def create_config_from_env():
     """从环境变量创建配置"""
     import os
     api_key = os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("OPENAI_API_KEY")
-    base_url = os.environ.get("AI_SHELL_BASE_URL", "https://api.deepseek.com")
+    base_url = os.environ.get("AI_SHELL_BASE_URL", "https://api.deepseek.com/v1")
     model = os.environ.get("AI_SHELL_MODEL", "deepseek-v4-flash")
     host = os.environ.get("AI_SHELL_HOST", "127.0.0.1")
     port = int(os.environ.get("AI_SHELL_PORT", "18080"))
