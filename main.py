@@ -50,8 +50,8 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例:
-  ai-shell.exe                  启动 Web 服务
-  ai-shell.exe server --port 9000   指定端口
+  ai-shell.exe                  启动终端版（默认）
+  ai-shell.exe server --port 9000   启动 Web 服务
   ai-shell.exe shell            终端版
   ai-shell.exe setup            重新配置 API
   ai-shell.exe uninstall        卸载
@@ -140,11 +140,10 @@ def main():
             sys.exit(1)
 
     # 启动
-    if args.mode is None or args.mode == "server":
+    if args.mode == "server":
         from config import load_config
         cfg = load_config()
-        
-        # 检查 API key
+
         api_key = cfg.get('chat_ai', {}).get('api_key', '')
         if not api_key:
             if is_interactive():
@@ -170,13 +169,12 @@ def main():
                     "或设置环境变量 DEEPSEEK_API_KEY"
                 )
             sys.exit(1)
-        
+
         if hasattr(args, 'host') and args.host:
             cfg["server"]["host"] = args.host
         if hasattr(args, 'port') and args.port:
             cfg["server"]["port"] = args.port
 
-        # 双击 exe 时自动打开浏览器
         if not is_interactive():
             host = cfg["server"]["host"]
             port = cfg["server"]["port"]
@@ -186,11 +184,12 @@ def main():
         server.config = cfg
         server.main()
 
-    elif args.mode == "shell":
-        import shell
-        shell.main()
+    elif args.mode == "setup" or args.mode == "uninstall":
+        pass
 
     else:
+        import shell
+        shell.main()
         parser.print_help()
 
 

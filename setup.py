@@ -267,11 +267,11 @@ def interactive_setup() -> bool:
     print("=" * 50)
     print()
     print("  1) Web 服务（浏览器访问）")
-    print("  2) 终端版（命令行交互）")
+    print("  2) 终端版（命令行交互，推荐）")
     print("  3) 不启动，稍后手动运行")
     print()
     
-    start_choice = _ask("选择", "1")
+    start_choice = _ask("选择", "2")
     
     if start_choice == "1":
         print("\n正在启动 Web 服务...")
@@ -283,7 +283,7 @@ def interactive_setup() -> bool:
         return "shell"
     else:
         print("\n配置完成！稍后可手动启动：")
-        print("  python main.py        # Web 服务")
-        print("  python main.py shell  # 终端版")
+        print("  ai-shell.exe           # 终端版（默认）")
+        print("  ai-shell.exe server    # Web 服务")
         print()
         return "none"
