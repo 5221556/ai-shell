@@ -21,6 +21,7 @@ from self_update import (
     ErrorLogger, VersionManager, detect_correction,
     UNIFIED_ANALYSIS_PROMPT, EXECUTION_PROMPT,
 )
+from sanitize import sanitizer
 
 def load_prompt(name: str) -> str:
     with open(RESOURCE_DIR / "prompts" / name, encoding="utf-8") as f:
@@ -42,6 +43,8 @@ _thread_local = threading.local()
 def get_chat_llm() -> LLMClient:
     if not hasattr(_thread_local, "chat_llm"):
         _thread_local.chat_llm = LLMClient(config["chat_ai"])
+        if not sanitizer._llm_client:
+            sanitizer.set_llm_client(_thread_local.chat_llm)
     return _thread_local.chat_llm
 
 def get_tool_llm() -> LLMClient:
@@ -56,104 +59,89 @@ _last_ai_reply: str = ""
 # ========== 双AI引擎 ==========
 
 def do_chat(user_input: str) -> list:
-    """完整对话流程。Chat AI 自行判断需要什么工具。"""
+    """完整对话流程。支持多轮工具调用。"""
     global _last_ai_reply
     chat_llm = get_chat_llm()
     tool_llm = get_tool_llm()
     chunks = []
 
-    # 构建消息：system prompt + 活跃上下文 + 用户输入
+    user_input = sanitizer.sanitize(user_input)
+
     messages = [{"role": "system", "content": chat_prompt}]
     messages.extend(ctx_mgr.get_messages())
     messages.append({"role": "user", "content": user_input})
 
-    try:
-        resp = chat_llm.chat(messages, tools=tool_defs)
-    except Exception as e:
-        error_logger.log_llm_error(context="chat_ai first call", error_body=str(e))
-        return [f"❌ AI 调用失败: {e}"]
-
-    msg = resp["choices"][0]["message"]
-
-    # 不需要工具——直接流式回复
-    if not msg.get("tool_calls"):
-        full = ""
+    # 多轮工具调用循环
+    max_rounds = 5
+    for round_num in range(max_rounds):
         try:
-            for chunk in chat_llm.stream(messages):
-                full += chunk
-                chunks.append(chunk)
+            resp = chat_llm.chat(messages, tools=tool_defs)
         except Exception as e:
-            error_logger.log_llm_error(context="chat_ai stream", error_body=str(e))
-            full = f"[流式输出中断: {e}]"
-            chunks.append(full)
+            error_logger.log_llm_error(context="chat_ai call", error_body=str(e))
+            return [f"❌ AI 调用失败: {e}"]
 
-        ctx_mgr.add_pair(user_input, full)
+        msg = resp["choices"][0]["message"]
 
-        with _last_ai_reply_lock:
-            prev = _last_ai_reply
-            _last_ai_reply = full
-        if detect_correction(user_input) and prev:
-            error_logger.log_ai_correction(user_input, prev)
-        return chunks
+        # 不需要工具——直接流式回复
+        if not msg.get("tool_calls"):
+            full = ""
+            try:
+                for chunk in chat_llm.stream(messages):
+                    full += chunk
+                    chunks.append(chunk)
+            except Exception as e:
+                error_logger.log_llm_error(context="chat_ai stream", error_body=str(e))
+                full = f"[流式输出中断: {e}]"
+                chunks.append(full)
 
-    # 需要工具
-    chunks.append("⏳ 正在执行任务...\n\n")
-    tool_results = []
+            ctx_mgr.add_pair(user_input, full)
 
-    for tc in msg["tool_calls"]:
-        func = tc["function"]
-        args = json.loads(func["arguments"])
-        chunks.append(f"🔧 调用 {func['name']}...\n")
-        result = execute_tool(func["name"], args)
-        tr = {
-            "tool": func["name"],
-            "success": result.success,
-            "data": result.data,
-            "error": result.error,
-        }
-        tool_results.append(tr)
-        if result.success:
-            chunks.append(f"✅ {func['name']} 完成\n")
-        else:
-            chunks.append(f"❌ {func['name']} 失败: {result.error}\n")
-            error_logger.log_tool_error(func["name"], user_input, result.error, args)
+            with _last_ai_reply_lock:
+                prev = _last_ai_reply
+                _last_ai_reply = full
+            if detect_correction(user_input) and prev:
+                error_logger.log_ai_correction(user_input, prev)
+            return chunks
 
-    # 工具AI核对
-    chunks.append("\n🔍 核对结果中...\n\n")
-    ctx = json.dumps(tool_results, ensure_ascii=False, indent=2)
-    try:
-        tool_resp = tool_llm.chat([
-            {"role": "system", "content": tool_prompt},
-            {"role": "user", "content": f"任务: {user_input}\n\n结果:\n{ctx}\n\n请核对汇报。"},
-        ])
-    except Exception as e:
-        error_logger.log_llm_error(context="tool_ai verify", error_body=str(e))
-        chunks.append(f"❌ 工具AI核对失败: {e}\n")
-        return chunks
+        # 执行工具
+        if round_num == 0:
+            chunks.append("⏳ 正在执行任务...\n\n")
 
-    report = tool_resp["choices"][0]["message"].get("content", "")
+        # 把 assistant 的工具调用加入 messages
+        messages.append(msg)
 
-    # 聊天AI审核
-    full = ""
-    try:
-        for chunk in chat_llm.stream([
-            {"role": "system", "content": chat_prompt},
-            {"role": "user", "content": user_input},
-            {"role": "assistant", "content": report},
-            {"role": "user", "content": "请审核以上结果，用自然语言回复用户。"},
-        ]):
-            full += chunk
-            chunks.append(chunk)
-    except Exception as e:
-        error_logger.log_llm_error(context="chat_ai review", error_body=str(e))
-        full = report
-        chunks.append(report)
+        tool_results = []
+        for tc in msg["tool_calls"]:
+            func = tc["function"]
+            args = json.loads(func["arguments"])
+            chunks.append(f"🔧 调用 {func['name']}...\n")
+            result = execute_tool(func["name"], args)
 
-    ctx_mgr.add_pair(user_input, full)
+            tr = {
+                "tool_call_id": tc["id"],
+                "tool": func["name"],
+                "success": result.success,
+                "data": result.data,
+                "error": result.error,
+            }
+            tool_results.append(tr)
 
-    with _last_ai_reply_lock:
-        _last_ai_reply = full
+            if result.success:
+                chunks.append(f"✅ {func['name']} 完成\n")
+            else:
+                chunks.append(f"❌ {func['name']} 失败: {result.error}\n")
+                error_logger.log_tool_error(func["name"], user_input, result.error, args)
 
+        # 把工具结果加入 messages
+        for tr in tool_results:
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tr["tool_call_id"],
+                "content": json.dumps(tr, ensure_ascii=False),
+            })
+
+    # 超过最大轮数
+    chunks.append("⚠️ 达到最大工具调用轮数\n")
     return chunks
 
 
