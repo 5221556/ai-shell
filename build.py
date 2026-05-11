@@ -22,6 +22,7 @@ HIDDEN_IMPORTS = [
     "llm",
     "tools",
     "context",
+    "sanitize",
     "self_update",
     "paths",
     "setup",
