@@ -36,7 +36,7 @@ def do_chat(user_input: str, chat_llm: LLMClient, tool_llm: LLMClient,
     messages.append({"role": "user", "content": user_input})
 
     # 多轮工具调用循环
-    max_rounds = 5
+    max_rounds = 20
     for round_num in range(max_rounds):
         try:
             resp = chat_llm.chat(messages, tools=tool_defs)
