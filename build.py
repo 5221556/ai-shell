@@ -31,6 +31,9 @@ HIDDEN_IMPORTS = [
     "shell",
     "yaml",
     "requests",
+    "comtypes",
+    "comtypes.stream",
+    "comtypes.gen",
 ]
 
 

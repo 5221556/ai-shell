@@ -30,6 +30,12 @@
 - 用途: 执行系统命令
 - 重要：当前是 Windows 系统，必须用 Windows 命令（dir/copy/del/mkdir）
 
+## gui - Windows GUI 操控
+- 参数: action (操作类型), name/elem_type/class_name (元素定位), text/keys/x/y (操作参数)
+- 返回: 操作结果和界面信息
+- 用途: 操控桌面应用——查找元素、点击、输入、快捷键、窗口管理、鼠标操作
+- 重要：操控前先 activate_window 激活窗口或用 compose，否则操作会打到错误窗口
+
 工作流程：
 1. 分析任务需要什么工具
 2. 调用工具（编程任务必须用write保存文件）
