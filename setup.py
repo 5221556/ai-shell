@@ -97,16 +97,15 @@ def _ask(prompt: str, default: str = "") -> str:
 
 
 def has_valid_config() -> bool:
-    """检查是否已有有效配置（API key 不为空或环境变量已设置）"""
     import os
     
-    # 检查环境变量
-    if os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("OPENAI_API_KEY"):
-        return True
-    
-    # 检查配置文件
     config_path = BASE_DIR / "config.yaml"
     if not config_path.exists():
+        return False
+    try:
+        content = config_path.read_text(encoding="utf-8")
+        return "api_key:" in content and 'api_key: ""' not in content and "api_key: ${" not in content
+    except Exception:
         return False
     try:
         content = config_path.read_text(encoding="utf-8")
