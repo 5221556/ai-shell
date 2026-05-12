@@ -7,6 +7,7 @@ import os
 import sys
 import json
 import re
+import yaml
 from pathlib import Path
 
 from paths import BASE_DIR, RESOURCE_DIR
@@ -289,8 +290,28 @@ def main():
 
     chat_llm = LLMClient(config["chat_ai"])
     tool_llm = LLMClient(config["tool_ai"])
+    llm = {"chat": chat_llm, "tool": tool_llm}
 
-    sanitizer.set_llm_client(chat_llm)
+    def swap_model(target: str, model: str):
+        config_path = BASE_DIR / "config.yaml"
+        if not config_path.exists():
+            print("❌ 配置文件不存在")
+            return
+        raw = config_path.read_text(encoding="utf-8")
+        data = yaml.safe_load(raw)
+        if target in ("chat", "both"):
+            data["chat_ai"]["model"] = model
+        if target in ("tool", "both"):
+            data["tool_ai"]["model"] = model
+        config_path.write_text(yaml.dump(data, allow_unicode=True, default_flow_style=False), encoding="utf-8")
+        if target in ("chat", "both"):
+            llm["chat"] = LLMClient(data["chat_ai"])
+            sanitizer.set_llm_client(llm["chat"])
+        if target in ("tool", "both"):
+            llm["tool"] = LLMClient(data["tool_ai"])
+        print(f"✅ 已切换: {target} -> {model}")
+
+    sanitizer.set_llm_client(llm["chat"])
 
     max_active = config.get("context", {}).get("max_active", 20)
     ctx_mgr = ContextManager(BASE_DIR, max_active=max_active)
@@ -307,6 +328,7 @@ def main():
 ║  上下文: 最近 {ctx_mgr.max_active} 条活跃 + 本地归档   ║
 ║                                      ║
 ║  输入需求，AI自行判断执行            ║
+║  /model <name> 热切换大模型          ║
 ║  /self-update  错误日志自我分析      ║
 ║  /context      查看上下文统计        ║
 ║  /errors       查看错误日志           ║
@@ -329,8 +351,30 @@ def main():
             print("👋 再见！")
             break
 
+        if user_input == "/model":
+            print(f"\n🔄 当前模型:")
+            print(f"  对话 AI: {llm['chat'].model}")
+            print(f"  工具 AI: {llm['tool'].model}")
+            print(f"\n  可切换模型: deepseek-v4-flash, deepseek-v4-pro")
+            print(f"  用法: /model chat <name>  |  /model tool <name>  |  /model both <name>")
+            print()
+            continue
+
+        if user_input.startswith("/model "):
+            parts = user_input.split()
+            if len(parts) >= 3:
+                target, model = parts[1], parts[2]
+                if target in ("chat", "tool", "both"):
+                    swap_model(target, model)
+                    print(f"  当前: 对话={llm['chat'].model}  工具={llm['tool'].model}\n")
+                else:
+                    print(f"❌ 目标错误: {target}，应为 chat/tool/both\n")
+            else:
+                print("❌ 用法: /model chat|tool|both <model_name>\n")
+            continue
+
         if user_input == "/self-update":
-            do_self_update(chat_llm, tool_llm,
+            do_self_update(llm["chat"], llm["tool"],
                           chat_prompt, tool_prompt, tool_defs,
                           error_logger, version_mgr)
             continue
@@ -384,7 +428,7 @@ def main():
             {"role": "user", "content": sanitized_input},
         ]
         try:
-            check = chat_llm.chat(check_messages, tools=tool_defs)
+            check = llm["chat"].chat(check_messages, tools=tool_defs)
         except Exception as e:
             error_logger.log_llm_error(context="pre-check", error_body=str(e))
             print(f"🤖 ❌ AI 调用失败: {e}\n")
@@ -393,18 +437,18 @@ def main():
         need_tools = bool(check["choices"][0]["message"].get("tool_calls"))
 
         if need_tools:
-            reply = do_chat(user_input, chat_llm, tool_llm,
+            reply = do_chat(user_input, llm["chat"], llm["tool"],
                            chat_prompt, tool_prompt, tool_defs,
                            ctx_mgr, error_logger, last_reply)
             print(f"\n🤖 {reply}\n")
         else:
             print("🤖 ", end="", flush=True)
-            reply = stream_reply(sanitized_input, chat_llm, chat_prompt,
+            reply = stream_reply(sanitized_input, llm["chat"], chat_prompt,
                                 ctx_mgr, error_logger, last_reply)
             print()
 
-    chat_llm.close()
-    tool_llm.close()
+    llm["chat"].close()
+    llm["tool"].close()
 
 
 if __name__ == "__main__":
