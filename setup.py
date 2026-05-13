@@ -107,11 +107,6 @@ def has_valid_config() -> bool:
         return "api_key:" in content and 'api_key: ""' not in content and "api_key: ${" not in content
     except Exception:
         return False
-    try:
-        content = config_path.read_text(encoding="utf-8")
-        return "api_key:" in content and 'api_key: ""' not in content and "api_key: ${" not in content
-    except Exception:
-        return False
 
 
 def run_setup_if_needed() -> bool:
