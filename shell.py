@@ -30,7 +30,8 @@ def load_prompt(name: str) -> str:
 
 def do_chat(user_input: str, chat_llm: LLMClient, tool_llm: LLMClient,
             chat_prompt: str, tool_prompt: str, tool_defs: list,
-            ctx_mgr: ContextManager, error_logger: ErrorLogger, last_reply: list) -> str:
+            ctx_mgr: ContextManager, error_logger: ErrorLogger, last_reply: list,
+            verbose: list = None) -> str:
     """一次完整对话。支持多轮工具调用。"""
 
     messages = [{"role": "system", "content": chat_prompt}]
@@ -65,7 +66,8 @@ def do_chat(user_input: str, chat_llm: LLMClient, tool_llm: LLMClient,
         for tc in msg["tool_calls"]:
             func = tc["function"]
             args = json.loads(func["arguments"])
-            print(f"  🔧 {func['name']}({json.dumps(args, ensure_ascii=False)[:120]})")
+            if verbose and verbose[0]:
+                print(f"  🔧 {func['name']}({json.dumps(args, ensure_ascii=False)[:120]})")
             t0 = time.time()
             result = execute_tool(func["name"], args)
             elapsed = time.time() - t0
@@ -76,9 +78,9 @@ def do_chat(user_input: str, chat_llm: LLMClient, tool_llm: LLMClient,
                 "error": result.error,
             }
             if result.success:
-                print(f"  ✅ 完成 ({elapsed:.1f}s)")
+                print(f"  ✅ {func['name']} ({elapsed:.1f}s)")
             else:
-                print(f"  ❌ ({elapsed:.1f}s) {result.error[:80]}")
+                print(f"  ❌ {func['name']} ({elapsed:.1f}s) {result.error[:80]}")
                 error_logger.log_tool_error(func["name"], user_input, result.error, args)
 
             messages.append({
@@ -309,12 +311,12 @@ def main():
         config_path.write_text(yaml.dump(data, allow_unicode=True, default_flow_style=False), encoding="utf-8")
         if target in ("chat", "both"):
             llm["chat"] = LLMClient(data["chat_ai"])
-            sanitizer.set_llm_client(llm["chat"])
         if target in ("tool", "both"):
             llm["tool"] = LLMClient(data["tool_ai"])
         print(f"✅ 已切换: {target} -> {model}")
 
     sanitizer.set_llm_client(llm["chat"])
+    verbose = [False]
 
     max_active = config.get("context", {}).get("max_active", 20)
     ctx_mgr = ContextManager(BASE_DIR, max_active=max_active)
@@ -331,7 +333,8 @@ def main():
 ║  上下文: 最近 {ctx_mgr.max_active} 条活跃 + 本地归档   ║
 ║                                      ║
 ║  输入需求，AI自行判断执行            ║
-║  \\ 续行  |  /model <name> 热切换大模型║
+║  \\ 续行  |  /verbose 切换详细/简要  ║
+║  /model <name> 热切换大模型          ║
 ║  /self-update  错误日志自我分析      ║
 ║  /context      查看上下文统计        ║
 ║  /errors       查看错误日志           ║
@@ -378,6 +381,11 @@ def main():
         if user_input in ("/quit", "/exit", "/q"):
             print("👋 再见！")
             break
+
+        if user_input == "/verbose":
+            verbose[0] = not verbose[0]
+            print(f"\n{'🔍 详细模式' if verbose[0] else '📋 简要模式'}\n")
+            continue
 
         if user_input == "/model":
             print(f"\n🔄 当前模型:")
@@ -467,7 +475,7 @@ def main():
         if need_tools:
             reply = do_chat(user_input, llm["chat"], llm["tool"],
                            chat_prompt, tool_prompt, tool_defs,
-                           ctx_mgr, error_logger, last_reply)
+                           ctx_mgr, error_logger, last_reply, verbose)
             print(f"\n🤖 {reply}\n")
         else:
             print("🤖 ", end="", flush=True)
