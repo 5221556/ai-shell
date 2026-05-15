@@ -7,6 +7,7 @@ import os
 import sys
 import json
 import re
+import time
 import yaml
 from pathlib import Path
 
@@ -64,8 +65,10 @@ def do_chat(user_input: str, chat_llm: LLMClient, tool_llm: LLMClient,
         for tc in msg["tool_calls"]:
             func = tc["function"]
             args = json.loads(func["arguments"])
-            print(f"  🔧 {func['name']}({args})")
+            print(f"  🔧 {func['name']}({json.dumps(args, ensure_ascii=False)[:120]})")
+            t0 = time.time()
             result = execute_tool(func["name"], args)
+            elapsed = time.time() - t0
             tr = {
                 "tool": func["name"],
                 "success": result.success,
@@ -73,9 +76,9 @@ def do_chat(user_input: str, chat_llm: LLMClient, tool_llm: LLMClient,
                 "error": result.error,
             }
             if result.success:
-                print(f"  ✅ 完成")
+                print(f"  ✅ 完成 ({elapsed:.1f}s)")
             else:
-                print(f"  ❌ {result.error}")
+                print(f"  ❌ ({elapsed:.1f}s) {result.error[:80]}")
                 error_logger.log_tool_error(func["name"], user_input, result.error, args)
 
             messages.append({
@@ -328,7 +331,7 @@ def main():
 ║  上下文: 最近 {ctx_mgr.max_active} 条活跃 + 本地归档   ║
 ║                                      ║
 ║  输入需求，AI自行判断执行            ║
-║  /model <name> 热切换大模型          ║
+║  \\ 续行  |  /model <name> 热切换大模型║
 ║  /self-update  错误日志自我分析      ║
 ║  /context      查看上下文统计        ║
 ║  /errors       查看错误日志           ║
@@ -338,9 +341,34 @@ def main():
 ╚══════════════════════════════════════╝
 """)
 
+    def read_multiline():
+        lines = []
+        first = True
+        while True:
+            try:
+                prompt = "🧑 " if first else "... "
+                line = input(prompt)
+                first = False
+                if not line:
+                    if lines:
+                        break
+                    continue
+                if line.endswith("\\"):
+                    lines.append(line[:-1].rstrip())
+                    continue
+                lines.append(line)
+                break
+            except (EOFError, KeyboardInterrupt):
+                return None
+        return " ".join(lines)
+
     while True:
         try:
-            user_input = input("🧑 ").strip()
+            user_input = read_multiline()
+            if user_input is None:
+                print("\n👋 再见！")
+                break
+            user_input = user_input.strip()
         except (EOFError, KeyboardInterrupt):
             print("\n👋 再见！")
             break
